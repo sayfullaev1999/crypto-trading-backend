@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:18
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: crypto_trading_user
+      POSTGRES_PASSWORD: StrongPassword
+      POSTGRES_DB: crypto_trading
+    volumes:
+      - postgres_data:/var/lib/postgresql
+  redis:
+    image: redis:latest
+    env_file:
+      - .env
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass "StrongPassword"
+
+volumes:
+  postgres_data:
