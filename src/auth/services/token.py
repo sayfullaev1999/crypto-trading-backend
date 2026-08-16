@@ -1,14 +1,15 @@
 from uuid import UUID
 
+from aioredis import Redis
+
 from auth.exceptions import InvalidTokenError
 from auth.services.jwt import JWTService
-from core.redis import RedisClient
 
 
 class TokenService:
     REFRESH_TOKEN_PREFIX = "auth:refresh:"
 
-    def __init__(self, jwt_service: JWTService, redis: RedisClient) -> None:
+    def __init__(self, jwt_service: JWTService, redis: Redis) -> None:
         self.jwt_service = jwt_service
         self.redis = redis
 
@@ -23,7 +24,7 @@ class TokenService:
         if not jti:
             raise InvalidTokenError
 
-        await self.redis.client.set(
+        await self.redis.set(
             name=self._get_refresh_key(jti),
             value=str(user_id),
             ex=self.jwt_service.refresh_token_expire_seconds,
@@ -40,12 +41,12 @@ class TokenService:
         if not jti or not user_id:
             raise InvalidTokenError
 
-        stored_user_id = await self.redis.client.get(self._get_refresh_key(jti))
+        stored_user_id = await self.redis.get(self._get_refresh_key(jti))
 
         if stored_user_id != user_id:
             raise InvalidTokenError
 
-        await self.redis.client.delete(self._get_refresh_key(jti))
+        await self.redis.delete(self._get_refresh_key(jti))
 
         return await self.create_token_pair(user_id=UUID(user_id))
 
@@ -57,7 +58,7 @@ class TokenService:
         if not jti:
             raise InvalidTokenError
 
-        await self.redis.client.delete(self._get_refresh_key(jti))
+        await self.redis.delete(self._get_refresh_key(jti))
 
     def _decode_refresh_token(self, token: str) -> dict:
         try:

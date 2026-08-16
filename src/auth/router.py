@@ -1,6 +1,7 @@
+from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Depends, status
 
-from auth.dependencies import get_auth_service
 from auth.schemas import (
     UserRegisterRequest,
     UserResponse,
@@ -13,7 +14,8 @@ from auth.services.auth import AuthService
 
 router = APIRouter(
     prefix="/api/auth",
-    tags=["Auth"]
+    tags=["Auth"],
+    route_class=DishkaRoute,
 )
 
 
@@ -23,8 +25,8 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
 )
 async def register(
-        data: UserRegisterRequest,
-        auth_service: AuthService = Depends(get_auth_service),
+    data: UserRegisterRequest,
+    auth_service: FromDishka[AuthService],
 ) -> UserResponse:
     return await auth_service.register(data)
 
@@ -35,8 +37,8 @@ async def register(
     status_code=status.HTTP_200_OK,
 )
 async def login(
-        data: UserLoginRequest,
-        auth_service: AuthService = Depends(get_auth_service),
+    data: UserLoginRequest,
+    auth_service: FromDishka[AuthService],
 ) -> TokenResponse:
     return await auth_service.login(data)
 
@@ -48,7 +50,7 @@ async def login(
 )
 async def refresh(
     data: RefreshTokenRequest,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: FromDishka[AuthService],
 ) -> TokenResponse:
     return await auth_service.refresh(data.refresh_token)
 
@@ -59,6 +61,6 @@ async def refresh(
 )
 async def logout(
     data: LogoutRequest,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: FromDishka[AuthService],
 ) -> None:
     await auth_service.logout(data.refresh_token)

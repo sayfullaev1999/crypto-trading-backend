@@ -1,28 +1,18 @@
 from contextlib import asynccontextmanager
 
+from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI
 
 from auth.exceptions import InvalidCredentialsError, InvalidTokenError
+from core.di import container
 from core.exception_handlers import (
     invalid_credentials_handler,
     user_already_exists_handler,
     invalid_token_handler
 )
 from core.settings import settings
-from core.container import container
 from auth import router as auth_router
 from users.exceptions import UserAlreadyExistsError
-
-
-@asynccontextmanager
-async def lifespan(app_: FastAPI):
-    database = container.database()
-    redis_client = container.redis_client()
-
-    yield
-
-    await database.close()
-    await redis_client.close()
 
 
 def register_routers(app_: FastAPI):
@@ -48,8 +38,8 @@ def register_exception_handlers(app_: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     debug=settings.DEBUG,
-    lifespan=lifespan
 )
 
 register_routers(app)
 register_exception_handlers(app)
+setup_dishka(container, app)

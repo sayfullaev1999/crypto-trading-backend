@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_SECONDS: int = 86400
     JWT_REFRESH_TOKEN_EXPIRE_SECONDS: int = 604800
 
+    WALLET_ENCRYPTION_PASSWORD: str
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

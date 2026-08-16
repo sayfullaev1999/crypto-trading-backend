@@ -3,14 +3,24 @@ from pwdlib import PasswordHash
 from auth.exceptions import InvalidCredentialsError
 from auth.schemas import UserRegisterRequest, UserLoginRequest, TokenResponse
 from auth.services.token import TokenService
+from infrastructure.database.uow import UnitOfWork
 from users.exceptions import UserAlreadyExistsError
 from users.repository import UserRepository
+from wallets.service import WalletService
 
 
 class AuthService:
-    def __init__(self, user_repository: UserRepository, token_service: TokenService):
+    def __init__(
+        self,
+        user_repository: UserRepository,
+        uow: UnitOfWork,
+        token_service: TokenService,
+        wallet_service: WalletService,
+    ):
         self.user_repository = user_repository
+        self.uow = uow
         self.token_service = token_service
+        self.wallet_service = wallet_service
         self.password_hasher = PasswordHash.recommended()
 
     async def register(self, data: UserRegisterRequest):
@@ -19,10 +29,14 @@ class AuthService:
         if existing_user:
             raise UserAlreadyExistsError
 
-        return await self.user_repository.create(
-            email=data.email,
-            password_hash=self.password_hasher.hash(data.password),
-        )
+        async with self.uow:
+            user = await self.user_repository.create(
+                email=data.email,
+                password_hash=self.password_hasher.hash(data.password),
+            )
+            _ = await self.wallet_service.create_wallet(user.id)
+
+        return user
 
     async def login(self, data: UserLoginRequest):
         user = await self.user_repository.get_by_email(data.email)

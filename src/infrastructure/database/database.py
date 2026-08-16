@@ -1,6 +1,3 @@
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
-
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -21,15 +18,6 @@ class Database:
             class_=AsyncSession,
             expire_on_commit=False,
         )
-
-    @asynccontextmanager
-    async def session(self) -> AsyncIterator[AsyncSession]:
-        async with self.session_factory() as session:
-            try:
-                yield session
-            except Exception:
-                await session.rollback()
-                raise
 
     async def close(self) -> None:
         await self.engine.dispose()
