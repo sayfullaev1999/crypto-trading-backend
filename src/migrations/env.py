@@ -10,6 +10,8 @@ from infrastructure.database.models import BaseModel
 
 from users.models import User
 from wallets.models import Wallet
+from symbols.models import Symbol
+from integrations.binance.models import BinanceMapping
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

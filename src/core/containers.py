@@ -4,10 +4,13 @@ from dishka.integrations.fastapi import FastapiProvider
 from auth.providers import AuthProvider
 from infrastructure.database.providers import DatabaseProvider
 from infrastructure.redis.providers import RedisProvider
+from integrations.binance.providers import BinanceProvider
+from symbols.providers import SymbolProvider
 from users.providers import UsersProvider
 from wallets.providers import WalletProvider
 
-container = make_async_container(
+
+app_container = make_async_container(
     FastapiProvider(),
 
     DatabaseProvider(),
@@ -16,4 +19,12 @@ container = make_async_container(
     UsersProvider(),
     WalletProvider(),
     AuthProvider(),
+    SymbolProvider()
+)
+
+worker_container = make_async_container(
+    DatabaseProvider(),
+    RedisProvider(),
+
+    BinanceProvider()
 )

@@ -1,10 +1,8 @@
-from contextlib import asynccontextmanager
-
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI
 
 from auth.exceptions import InvalidCredentialsError, InvalidTokenError
-from core.di import container
+from core.containers import app_container
 from core.exception_handlers import (
     invalid_credentials_handler,
     user_already_exists_handler,
@@ -42,4 +40,4 @@ app = FastAPI(
 
 register_routers(app)
 register_exception_handlers(app)
-setup_dishka(container, app)
+setup_dishka(app_container, app)
