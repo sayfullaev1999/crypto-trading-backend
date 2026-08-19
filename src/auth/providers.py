@@ -1,4 +1,4 @@
-from aioredis import Redis
+from redis.asyncio import Redis
 from dishka import provide, Scope, Provider
 
 from auth.services.auth import AuthService

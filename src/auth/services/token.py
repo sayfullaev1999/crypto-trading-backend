@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from aioredis import Redis
+from redis.asyncio import Redis
 
 from auth.exceptions import InvalidTokenError
 from auth.services.jwt import JWTService

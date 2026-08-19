@@ -1,6 +1,7 @@
 from typing import AsyncIterable
 
-from aioredis import Redis
+from redis.asyncio import Redis
+
 from dishka import provide, Scope, Provider
 
 from core.settings import settings

@@ -1,7 +1,7 @@
 import json
 import logging
 
-from aioredis import Redis
+from redis.asyncio import Redis
 
 logger = logging.getLogger(__name__)
 

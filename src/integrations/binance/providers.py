@@ -1,4 +1,4 @@
-from aioredis import Redis
+from redis.asyncio import Redis
 from dishka import Provider, provide, Scope
 
 from infrastructure.database.database import Database
