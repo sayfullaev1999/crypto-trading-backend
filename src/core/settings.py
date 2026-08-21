@@ -1,9 +1,5 @@
-from dotenv import load_dotenv
-from pydantic import PostgresDsn, RedisDsn
+from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
-load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -11,7 +7,10 @@ class Settings(BaseSettings):
     DEBUG: bool
 
     POSTGRES_DSN: PostgresDsn
-    REDIS_DSN: RedisDsn
+
+    REDIS_PASSWORD: str
+    REDIS_SENTINEL_HOSTS: str
+    REDIS_SENTINEL_MASTER_NAME: str
 
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
