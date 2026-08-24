@@ -8,6 +8,8 @@ from core.exception_handlers import (
     user_already_exists_handler,
     invalid_token_handler, unauthorized_user_handler
 )
+from core.logging.config import setup_logging
+from core.logging.middleware import logging_middleware
 from core.settings import settings
 from auth import router as auth_router
 from symbols import router as symbols_router
@@ -39,6 +41,11 @@ def register_exception_handlers(app_: FastAPI):
     )
 
 
+def register_middlewares(app_: FastAPI):
+    setup_logging()
+    app_.middleware("http")(logging_middleware)
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     debug=settings.DEBUG,
@@ -46,4 +53,5 @@ app = FastAPI(
 
 register_routers(app)
 register_exception_handlers(app)
+register_middlewares(app)
 setup_dishka(app_container, app)

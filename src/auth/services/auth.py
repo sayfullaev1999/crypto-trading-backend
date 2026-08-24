@@ -79,7 +79,7 @@ class AuthService:
             payload = self.token_service.jwt_service.decode_token(token)
         except Exception:
             raise UnAuthorizedError
-        print(payload)
+
         if payload.get("type") != "access":
             raise UnAuthorizedError
 
