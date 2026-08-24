@@ -1,16 +1,29 @@
 from redis.asyncio import Redis
-from dishka import provide, Scope, Provider
+from dishka import provide, Scope, Provider, from_context
+from fastapi import Request
 
 from auth.services.auth import AuthService
 from auth.services.jwt import JWTService
 from auth.services.token import TokenService
 from core.settings import settings
 from infrastructure.database.uow import UnitOfWork
+from users.models import User
 from users.repository import UserRepository
 from wallets.service import WalletService
 
 
 class AuthProvider(Provider):
+    request = from_context(provides=Request, scope=Scope.REQUEST)
+
+    @provide(scope=Scope.REQUEST)
+    async def get_current_user(
+        self,
+        request: Request,
+        auth_service: AuthService,
+    ) -> User:
+        authorization = request.headers.get("Authorization")
+        return await auth_service.get_user_by_token(authorization)
+
     @provide(scope=Scope.REQUEST)
     def auth_service(
         self,

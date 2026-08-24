@@ -1,6 +1,6 @@
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status
 
 from auth.schemas import (
     UserRegisterRequest,

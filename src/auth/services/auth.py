@@ -1,6 +1,8 @@
+from uuid import UUID
+
 from pwdlib import PasswordHash
 
-from auth.exceptions import InvalidCredentialsError
+from auth.exceptions import InvalidCredentialsError, UnAuthorizedError
 from auth.schemas import UserRegisterRequest, UserLoginRequest, TokenResponse
 from auth.services.token import TokenService
 from infrastructure.database.uow import UnitOfWork
@@ -46,7 +48,7 @@ class AuthService:
 
         if not self.password_hasher.verify(
             password=data.password,
-            hashed_password=user.password_hash
+            hash=user.password_hash
         ):
             raise InvalidCredentialsError
 
@@ -66,3 +68,28 @@ class AuthService:
 
     async def logout(self, refresh_token: str) -> None:
         await self.token_service.revoke(refresh_token)
+
+    async def get_user_by_token(self, token: str):
+        if not token or not token.startswith("Bearer "):
+            raise UnAuthorizedError
+
+        token = token.replace("Bearer ", "")
+
+        try:
+            payload = self.token_service.jwt_service.decode_token(token)
+        except Exception:
+            raise UnAuthorizedError
+        print(payload)
+        if payload.get("type") != "access":
+            raise UnAuthorizedError
+
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            raise UnAuthorizedError
+
+        user = await self.user_repository.get_by_id(UUID(user_id_str))
+
+        if not user:
+            raise UnAuthorizedError
+
+        return user

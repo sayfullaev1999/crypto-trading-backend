@@ -1,7 +1,7 @@
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
-from auth.exceptions import InvalidCredentialsError, InvalidTokenError
+from auth.exceptions import InvalidCredentialsError, InvalidTokenError, UnAuthorizedError
 from users.exceptions import UserAlreadyExistsError
 
 
@@ -34,3 +34,12 @@ async def invalid_token_handler(
         content={"detail": "Invalid token"},
     )
 
+
+async def unauthorized_user_handler(
+    request: Request,
+    exc: UnAuthorizedError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": "Unauthorized"},
+    )

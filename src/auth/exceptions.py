@@ -8,3 +8,7 @@ class InvalidCredentialsError(AuthenticationError):
 
 class InvalidTokenError(AuthenticationError):
     """Invalid token."""
+
+
+class UnAuthorizedError(AuthenticationError):
+    """Unauthorized user."""
