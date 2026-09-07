@@ -29,6 +29,14 @@ jobs:
       - name: Check application import
         env:
           PYTHONPATH: ${{ github.workspace }}/src
+          DEBUG: "false"
+          POSTGRES_DSN: "postgresql+asyncpg://test:test@localhost:5432/test"
+          REDIS_PASSWORD: "test"
+          REDIS_SENTINEL_HOSTS: "localhost:26379"
+          REDIS_SENTINEL_MASTER_NAME: "mymaster"
+          JWT_SECRET_KEY: "test-secret-key"
+          WALLET_ENCRYPTION_PASSWORD: "test-password"
+          POLYGON_API_KEY: "test-api-key"
         run: |
           python -c "import main"
 
