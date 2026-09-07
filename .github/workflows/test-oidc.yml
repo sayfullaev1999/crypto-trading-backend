@@ -18,14 +18,32 @@ jobs:
           workload_identity_provider: projects/982637213247/locations/global/workloadIdentityPools/github-actions/providers/github
           service_account: github-actions-deployer@project-2e6d4ec9-7a27-4123-9db.iam.gserviceaccount.com
 
-      - name: Verify identity
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Verify authentication
         run: |
           gcloud auth list
           gcloud config get-value project
 
-      - name: Test IAP access
+      - name: Test IAP
         run: |
-          gcloud compute ssh instance-20260904-100901 \
+          gcloud compute start-iap-tunnel \
+            instance-20260904-100901 \
+            22 \
             --zone=europe-west3-c \
-            --tunnel-through-iap \
-            --command="echo 'GITHUB ACTIONS → IAP → VM: SUCCESS'"
+            --local-host-port=localhost:2222 \
+            --verbosity=info &
+          
+          TUNNEL_PID=$!
+
+          sleep 10
+
+          if kill -0 $TUNNEL_PID 2>/dev/null; then
+            echo "IAP tunnel started successfully"
+            kill $TUNNEL_PID
+            exit 0
+          else
+            echo "IAP tunnel failed"
+            exit 1
+          fi
