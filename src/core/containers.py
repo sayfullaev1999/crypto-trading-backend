@@ -5,6 +5,7 @@ from auth.providers import AuthProvider
 from infrastructure.database.providers import DatabaseProvider
 from infrastructure.redis.providers import RedisProvider
 from integrations.binance.providers import BinanceProvider
+from market_data.providers import MarketDataProvider
 from symbols.providers import SymbolProvider
 from users.providers import UsersProvider
 from wallets.providers import WalletProvider
@@ -19,7 +20,8 @@ app_container = make_async_container(
     UsersProvider(),
     WalletProvider(),
     AuthProvider(),
-    SymbolProvider()
+    SymbolProvider(),
+    MarketDataProvider()
 )
 
 worker_container = make_async_container(

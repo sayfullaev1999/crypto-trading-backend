@@ -14,3 +14,4 @@ email-validator==2.3.0
 web3==7.16.0
 cryptography==50.0.0
 unicorn-binance-websocket-api==2.15.1
+polygon-api-client==1.16.3

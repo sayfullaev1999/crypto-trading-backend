@@ -12,6 +12,7 @@ from users.models import User
 from wallets.models import Wallet
 from symbols.models import Symbol
 from integrations.binance.models import BinanceMapping
+from integrations.polygon.models import PolygonMapping
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -19,6 +20,8 @@ class Settings(BaseSettings):
 
     WALLET_ENCRYPTION_PASSWORD: str
 
+    POLYGON_API_KEY: str
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -26,4 +29,5 @@ class Settings(BaseSettings):
     )
 
 
+load_dotenv()
 settings = Settings()

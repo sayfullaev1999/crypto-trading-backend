@@ -1,65 +1,65 @@
 services:
-  migrate:
-    container_name: migrate
-    build:
-      context: .
-      dockerfile: ./docker/app/Dockerfile
-    env_file:
-      - .env
-    command: ["alembic", "-c", "src/alembic.ini", "upgrade", "head"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-  app:
-    container_name: app
-    build:
-      context: .
-      dockerfile: ./docker/app/Dockerfile
-    env_file:
-      - .env
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
-    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--no-access-log"]
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-      redis-primary:
-        condition: service_started
-      redis-replica-1:
-        condition: service_started
-      redis-replica-2:
-        condition: service_started
-      redis-sentinel-1:
-        condition: service_started
-      redis-sentinel-2:
-        condition: service_started
-      redis-sentinel-3:
-        condition: service_started
-  worker-binance:
-    container_name: worker-binance
-    build:
-      context: .
-      dockerfile: ./docker/app/Dockerfile
-    env_file:
-      - .env
-    command: ["python", "-m", "workers.binance"]
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-      redis-primary:
-        condition: service_started
-      redis-replica-1:
-        condition: service_started
-      redis-replica-2:
-        condition: service_started
-      redis-sentinel-1:
-        condition: service_started
-      redis-sentinel-2:
-        condition: service_started
-      redis-sentinel-3:
-        condition: service_started
+#  migrate:
+#    container_name: migrate
+#    build:
+#      context: .
+#      dockerfile: ./docker/app/Dockerfile
+#    env_file:
+#      - .env
+#    command: ["alembic", "-c", "src/alembic.ini", "upgrade", "head"]
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#  app:
+#    container_name: app
+#    build:
+#      context: .
+#      dockerfile: ./docker/app/Dockerfile
+#    env_file:
+#      - .env
+#    ports:
+#      - "8000:8000"
+#    volumes:
+#      - .:/app
+#    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--no-access-log"]
+#    depends_on:
+#      migrate:
+#        condition: service_completed_successfully
+#      redis-primary:
+#        condition: service_started
+#      redis-replica-1:
+#        condition: service_started
+#      redis-replica-2:
+#        condition: service_started
+#      redis-sentinel-1:
+#        condition: service_started
+#      redis-sentinel-2:
+#        condition: service_started
+#      redis-sentinel-3:
+#        condition: service_started
+#  worker-binance:
+#    container_name: worker-binance
+#    build:
+#      context: .
+#      dockerfile: ./docker/app/Dockerfile
+#    env_file:
+#      - .env
+#    command: ["python", "-m", "workers.binance"]
+#    depends_on:
+#      migrate:
+#        condition: service_completed_successfully
+#      redis-primary:
+#        condition: service_started
+#      redis-replica-1:
+#        condition: service_started
+#      redis-replica-2:
+#        condition: service_started
+#      redis-sentinel-1:
+#        condition: service_started
+#      redis-sentinel-2:
+#        condition: service_started
+#      redis-sentinel-3:
+#        condition: service_started
   postgres:
     container_name: "postgres"
     image: postgres:18
@@ -75,63 +75,67 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
-  redis-primary:
-    container_name: "redis-primary"
+    ports:
+      - "5432:5432"
+  redis:
+    container_name: "redis"
     build:
       context: ./docker/redis
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
-      - redis-primary-data:/data
-  redis-replica-1:
-    container_name: "redis-replica-1"
-    build:
-      context: ./docker/redis
-    command:
-      - redis-server
-      - /usr/local/etc/redis/redis.conf
-      - --replicaof
-      - redis-primary
-      - "6379"
-    volumes:
-      - redis-replica-1-data:/data
-  redis-replica-2:
-    container_name: "redis-replica-2"
-    build:
-      context: ./docker/redis
-    command:
-      - redis-server
-      - /usr/local/etc/redis/redis.conf
-      - --replicaof
-      - redis-primary
-      - "6379"
-    volumes:
-      - redis-replica-2-data:/data
-  redis-sentinel-1:
-    container_name: "redis-sentinel-1"
-    build:
-      context: ./docker/redis
-    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
-    volumes:
-      - redis-sentinel-1-data:/data
-  redis-sentinel-2:
-    container_name: "redis-sentinel-2"
-    build:
-      context: ./docker/redis
-    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
-    volumes:
-      - redis-sentinel-2-data:/data
-  redis-sentinel-3:
-    container_name: "redis-sentinel-3"
-    build:
-      context: ./docker/redis
-    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
-    volumes:
-      - redis-sentinel-3-data:/data
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+#  redis-replica-1:
+#    container_name: "redis-replica-1"
+#    build:
+#      context: ./docker/redis
+#    command:
+#      - redis-server
+#      - /usr/local/etc/redis/redis.conf
+#      - --replicaof
+#      - redis-primary
+#      - "6379"
+#    volumes:
+#      - redis-replica-1-data:/data
+#  redis-replica-2:
+#    container_name: "redis-replica-2"
+#    build:
+#      context: ./docker/redis
+#    command:
+#      - redis-server
+#      - /usr/local/etc/redis/redis.conf
+#      - --replicaof
+#      - redis-primary
+#      - "6379"
+#    volumes:
+#      - redis-replica-2-data:/data
+#  redis-sentinel-1:
+#    container_name: "redis-sentinel-1"
+#    build:
+#      context: ./docker/redis
+#    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+#    volumes:
+#      - redis-sentinel-1-data:/data
+#  redis-sentinel-2:
+#    container_name: "redis-sentinel-2"
+#    build:
+#      context: ./docker/redis
+#    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+#    volumes:
+#      - redis-sentinel-2-data:/data
+#  redis-sentinel-3:
+#    container_name: "redis-sentinel-3"
+#    build:
+#      context: ./docker/redis
+#    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+#    volumes:
+#      - redis-sentinel-3-data:/data
 volumes:
   postgres_data:
-  redis-primary-data:
-  redis-replica-1-data:
-  redis-replica-2-data:
-  redis-sentinel-1-data:
-  redis-sentinel-2-data:
-  redis-sentinel-3-data:
+  redis_data:
+#  redis-replica-1-data:
+#  redis-replica-2-data:
+#  redis-sentinel-1-data:
+#  redis-sentinel-2-data:
+#  redis-sentinel-3-data:
