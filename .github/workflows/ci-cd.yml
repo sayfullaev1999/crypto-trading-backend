@@ -121,8 +121,7 @@ jobs:
 
       - name: Verify Kubernetes access
         run: |
-          kubectl get namespace backend
-          kubectl get pods -n backend
+          kubectl get pods
 
       - name: Create PostgreSQL secret
         env:
