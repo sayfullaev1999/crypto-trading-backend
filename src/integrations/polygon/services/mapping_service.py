@@ -1,12 +1,7 @@
-from typing import TYPE_CHECKING
-
 from infrastructure.database.database import Database
 from integrations.polygon.models import PolygonMapping
 from integrations.polygon.repository import PolygonMappingRepository
-
-
-if TYPE_CHECKING:
-    from symbols.enums import SymbolType
+from symbols.enums import SymbolType
 
 
 class PolygonMappingService:
