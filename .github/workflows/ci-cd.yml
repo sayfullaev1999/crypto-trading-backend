@@ -97,9 +97,9 @@ jobs:
 
       - name: Configure Kubernetes
         env:
-          KUBE_SERVER: ${{ secrets.kube_server }}
-          KUBE_TOKEN: ${{ secrets.kube_token }}
-          KUBE_CA_CERT: ${{ secrets.kube_ca_cert }}
+          KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
+          KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+          KUBE_CA_CERT: ${{ secrets.KUBE_CA_CERT }}
         run: |
           mkdir -p ~/.kube
 
