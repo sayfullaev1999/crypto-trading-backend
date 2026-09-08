@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: crypto-dezz-uz
+  namespace: backend
+spec:
+  secretName: crypto-dezz-uz-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - crypto.dezz.uz

@@ -123,6 +123,18 @@ jobs:
         run: |
           kubectl get pods
 
+      - name: Create Cloudflare credentials
+        run: |
+          kubectl create secret generic cloudflare-api-token \
+            -n cert-manager \
+            --from-literal=api-token="${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+            --dry-run=client \
+            -o yaml | kubectl apply -f -
+
+      - name: Deploy cert-manager issuer
+        run: |
+          kubectl apply -f k8s/cert-manager/cluster-issuer.yaml
+          kubectl apply -f k8s/cert-manager/certificate.yaml
 
       - name: Create secrets
         env:
