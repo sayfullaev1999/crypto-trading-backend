@@ -224,7 +224,10 @@ jobs:
           sed "s/IMAGE_TAG/${{ github.sha }}/g" \
             k8s/backend/api/deployment.yaml \
             | kubectl apply -f -
+
           kubectl apply -f k8s/backend/api/service.yaml
+
+          kubectl apply -f k8s/backend/api/ingress.yaml
       
       # Workers
       - name: Deploy workers
