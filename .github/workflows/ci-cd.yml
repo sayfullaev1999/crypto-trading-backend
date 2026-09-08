@@ -123,6 +123,8 @@ jobs:
         run: |
           kubectl get pods
 
+      # POSTGRESQL
+
       - name: Create PostgreSQL secret
         env:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -148,3 +150,49 @@ jobs:
       - name: Show PostgreSQL status
         run: |
           kubectl get pods,pvc,svc -n backend
+
+      # REDIS
+
+      - name: Create Redis secret
+        env:
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+        run: |
+          kubectl create secret generic redis-secret \
+            -n backend \
+            --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD" \
+            --dry-run=client \
+            -o yaml | kubectl apply -f -
+
+      - name: Deploy Redis config
+        run: |
+          kubectl apply -f k8s/redis/configmap.yaml
+
+      - name: Deploy Redis primary
+        run: |
+          kubectl apply -f k8s/redis/service.yaml
+          kubectl apply -f k8s/redis/primary.yaml
+
+      - name: Deploy Redis replicas
+        run: |
+          kubectl apply -f k8s/redis/replicas.yaml
+
+      - name: Deploy Redis Sentinel
+        run: |
+          kubectl apply -f k8s/redis/sentinel.yaml
+
+      - name: Wait for Redis
+        run: |
+          kubectl rollout status \
+            statefulset/redis-primary \
+            -n backend \
+            --timeout=180s
+
+          kubectl rollout status \
+            statefulset/redis-replica \
+            -n backend \
+            --timeout=180s
+
+          kubectl rollout status \
+            statefulset/redis-sentinel \
+            -n backend \
+            --timeout=180s

@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-replica
+  namespace: backend
+
+spec:
+  serviceName: redis-replica
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: redis-replica
+
+  template:
+    metadata:
+      labels:
+        app: redis-replica
+
+    spec:
+      containers:
+        - name: redis
+          image: redis:8-alpine
+
+          command:
+            - /bin/sh
+            - -c
+            - |
+              envsubst < /config-template/redis.conf > /config/redis.conf
+              echo "replicaof redis-primary 6379" >> /config/redis.conf
+              exec redis-server /config/redis.conf
+
+          ports:
+            - name: redis
+              containerPort: 6379
+
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_PASSWORD
+
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+
+            - name: redis-config-template
+              mountPath: /config-template
+              readOnly: true
+
+            - name: redis-config
+              mountPath: /config
+
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - redis-cli --no-auth-warning -a "$REDIS_PASSWORD" ping
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - redis-cli --no-auth-warning -a "$REDIS_PASSWORD" ping
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+      volumes:
+        - name: redis-config-template
+          configMap:
+            name: redis-config
+
+        - name: redis-config
+          emptyDir: {}
+
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+
+      spec:
+        accessModes:
+          - ReadWriteOnce
+
+        resources:
+          requests:
+            storage: 10Gi

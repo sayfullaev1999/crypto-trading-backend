@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-sentinel
+  namespace: backend
+
+spec:
+  serviceName: redis-sentinel
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: redis-sentinel
+
+  template:
+    metadata:
+      labels:
+        app: redis-sentinel
+
+    spec:
+      containers:
+        - name: sentinel
+          image: redis:8-alpine
+
+          command:
+            - /bin/sh
+            - -c
+            - |
+              envsubst < /config-template/sentinel.conf > /config/sentinel.conf
+              exec redis-server /config/sentinel.conf --sentinel
+
+          ports:
+            - name: sentinel
+              containerPort: 26379
+
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_PASSWORD
+
+          volumeMounts:
+            - name: sentinel-config-template
+              mountPath: /config-template
+              readOnly: true
+
+            - name: sentinel-config
+              mountPath: /config
+
+          readinessProbe:
+            tcpSocket:
+              port: 26379
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+          livenessProbe:
+            tcpSocket:
+              port: 26379
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+
+      volumes:
+        - name: sentinel-config-template
+          configMap:
+            name: redis-config
+
+        - name: sentinel-config
+          emptyDir: {}
