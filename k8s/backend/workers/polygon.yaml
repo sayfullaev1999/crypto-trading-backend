@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-polygon-worker
+  namespace: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-polygon-worker
+  template:
+    metadata:
+      labels:
+        app: backend-polygon-worker
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+
+      containers:
+        - name: polygon-worker
+          image: ghcr.io/sayfullaev1999/crypto-trading-backend:IMAGE_TAG
+          imagePullPolicy: Always
+
+          command:
+            - python
+            - -m
+            - workers.polygon
+
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secrets

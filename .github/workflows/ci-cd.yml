@@ -217,3 +217,59 @@ jobs:
         if: always()
         run: |
           kubectl logs job/backend-migrations -n backend
+
+      # API
+      - name: Deploy backend API
+        run: |
+          sed "s/IMAGE_TAG/${{ github.sha }}/g" \
+            k8s/backend/api/deployment.yaml \
+            | kubectl apply -f -
+          kubectl apply -f k8s/backend/api/service.yaml
+      
+      # Workers
+      - name: Deploy workers
+        run: |
+          sed "s/IMAGE_TAG/${{ github.sha }}/g" \
+            k8s/backend/workers/binance.yaml \
+            | kubectl apply -f -
+          sed "s/IMAGE_TAG/${{ github.sha }}/g" \
+            k8s/backend/workers/polygon.yaml \
+            | kubectl apply -f -
+
+      # -------------------------
+      # Rollout
+      # -------------------------
+
+      - name: Wait for backend
+        run: |
+          kubectl rollout status \
+            deployment/backend-api \
+            -n backend \
+            --timeout=180s
+
+          kubectl rollout status \
+            deployment/backend-binance-worker \
+            -n backend \
+            --timeout=180s
+
+          kubectl rollout status \
+            deployment/backend-polygon-worker \
+            -n backend \
+            --timeout=180s
+
+      # Final status
+      - name: Show cluster status
+        if: always()
+        run: |
+          echo "=== PODS ==="
+          kubectl get pods -n backend -o wide
+
+          echo "=== SERVICES ==="
+          kubectl get svc -n backend
+
+          echo "=== DEPLOYMENTS ==="
+          kubectl get deployments -n backend
+
+          echo "=== STATEFULSETS ==="
+
+          kubectl get statefulsets -n backend

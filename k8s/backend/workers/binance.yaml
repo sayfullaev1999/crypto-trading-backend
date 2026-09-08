@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-binance-worker
+  namespace: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-binance-worker
+  template:
+    metadata:
+      labels:
+        app: backend-binance-worker
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+
+      containers:
+        - name: binance-worker
+          image: ghcr.io/sayfullaev1999/crypto-trading-backend:IMAGE_TAG
+          imagePullPolicy: Always
+
+          command:
+            - python
+            - -m
+            - workers.binance
+
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secrets
