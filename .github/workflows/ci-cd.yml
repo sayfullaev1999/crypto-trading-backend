@@ -123,36 +123,7 @@ jobs:
         run: |
           kubectl get pods
 
-      # POSTGRESQL
-
-      - name: Create PostgreSQL secret
-        env:
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-        run: |
-          kubectl create secret generic postgres-secret \
-            -n backend \
-            --from-literal=POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-            --dry-run=client \
-            -o yaml | kubectl apply -f -
-
-      - name: Deploy PostgreSQL
-        run: |
-          kubectl apply -f k8s/postgres/service.yaml
-          kubectl apply -f k8s/postgres/statefulset.yaml
-
-      - name: Wait for PostgreSQL
-        run: |
-          kubectl rollout status \
-            statefulset/postgres \
-            -n backend \
-            --timeout=180s
-
-      - name: Show PostgreSQL status
-        run: |
-          kubectl get pods,pvc,svc -n backend
-
-      # REDIS
-
+      # Redis
       - name: Create Redis secret
         env:
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
@@ -196,3 +167,53 @@ jobs:
             statefulset/redis-sentinel \
             -n backend \
             --timeout=180s
+
+      # Postgres
+      - name: Create PostgreSQL secret
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        run: |
+          kubectl create secret generic postgres-secret \
+            -n backend \
+            --from-literal=POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            --from-literal=POSTGRES_DSN="postgresql+asyncpg://crypto_trading_user:${POSTGRES_PASSWORD}@postgres:5432/crypto_trading" \
+            --dry-run=client \
+            -o yaml | kubectl apply -f -
+
+      - name: Deploy PostgreSQL
+        run: |
+          kubectl apply -f k8s/postgres/service.yaml
+          kubectl apply -f k8s/postgres/statefulset.yaml
+
+      - name: Wait for PostgreSQL
+        run: |
+          kubectl rollout status \
+            statefulset/postgres \
+            -n backend \
+            --timeout=180s
+
+      - name: Show PostgreSQL status
+        run: |
+          kubectl get pods,pvc,svc -n backend
+
+      # Alembic
+      - name: Run database migrations
+        run: |
+          kubectl delete job backend-migrations \
+            -n backend \
+            --ignore-not-found
+          sed "s/IMAGE_TAG/${{ github.sha }}/g" \
+            k8s/migrations/job.yaml \
+            | kubectl apply -f -
+
+      - name: Wait for migrations
+        run: |
+          kubectl wait \
+            --for=condition=complete \
+            job/backend-migrations \
+            -n backend \
+            --timeout=180s
+
+      - name: Show migration logs
+        run: |
+          kubectl logs -n backend
