@@ -25,9 +25,9 @@ spec:
             - upgrade
             - head
 
-          env:
-            - name: POSTGRES_DSN
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secrets
-                  key: POSTGRES_DSN
+          envFrom:
+            - configMapRef:
+                name: backend-config
+
+            - secretRef:
+                name: backend-secrets
