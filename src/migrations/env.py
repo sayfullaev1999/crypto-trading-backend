@@ -31,7 +31,7 @@ target_metadata = BaseModel.metadata
 
 config.set_main_option(
     "sqlalchemy.url",
-    str(settings.POSTGRES_DSN),
+    str(settings.POSTGRES_DSN).replace("%", "%%"),
 )
 
 # other values from the config, defined by the needs of env.py,
