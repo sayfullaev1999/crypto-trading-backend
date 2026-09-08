@@ -123,17 +123,44 @@ jobs:
         run: |
           kubectl get pods
 
-      # Redis
-      - name: Create Redis secret
+
+      - name: Create secrets
         env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          WALLET_ENCRYPTION_PASSWORD: ${{ secrets.WALLET_ENCRYPTION_PASSWORD }}
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
         run: |
-          kubectl create secret generic redis-secret \
+          kubectl create secret generic backend-secrets \
             -n backend \
+            --from-literal=POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            --from-literal=POSTGRES_DSN="postgresql+asyncpg://crypto_trading_user:${POSTGRES_PASSWORD}@postgres:5432/crypto_trading" \
             --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD" \
+            --from-literal=JWT_SECRET_KEY="$JWT_SECRET_KEY" \
+            --from-literal=WALLET_ENCRYPTION_PASSWORD="$WALLET_ENCRYPTION_PASSWORD" \
+            --from-literal=POLYGON_API_KEY="$POLYGON_API_KEY" \
             --dry-run=client \
             -o yaml | kubectl apply -f -
 
+      - name: Deploy backend config
+        run: |
+          kubectl apply -f k8s/backend/configmap.yaml
+
+      # Postgres
+      - name: Deploy PostgreSQL
+        run: |
+          kubectl apply -f k8s/postgres/service.yaml
+          kubectl apply -f k8s/postgres/statefulset.yaml
+
+      - name: Wait for PostgreSQL
+        run: |
+          kubectl rollout status \
+            statefulset/postgres \
+            -n backend \
+            --timeout=180s
+
+      # Redis
       - name: Deploy Redis config
         run: |
           kubectl apply -f k8s/redis/configmap.yaml
@@ -168,34 +195,6 @@ jobs:
             -n backend \
             --timeout=180s
 
-      # Postgres
-      - name: Create PostgreSQL secret
-        env:
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-        run: |
-          kubectl create secret generic postgres-secret \
-            -n backend \
-            --from-literal=POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-            --from-literal=POSTGRES_DSN="postgresql+asyncpg://crypto_trading_user:${POSTGRES_PASSWORD}@postgres:5432/crypto_trading" \
-            --dry-run=client \
-            -o yaml | kubectl apply -f -
-
-      - name: Deploy PostgreSQL
-        run: |
-          kubectl apply -f k8s/postgres/service.yaml
-          kubectl apply -f k8s/postgres/statefulset.yaml
-
-      - name: Wait for PostgreSQL
-        run: |
-          kubectl rollout status \
-            statefulset/postgres \
-            -n backend \
-            --timeout=180s
-
-      - name: Show PostgreSQL status
-        run: |
-          kubectl get pods,pvc,svc -n backend
-
       # Alembic
       - name: Run database migrations
         run: |
@@ -203,7 +202,7 @@ jobs:
             -n backend \
             --ignore-not-found
           sed "s/IMAGE_TAG/${{ github.sha }}/g" \
-            k8s/migrations/job.yaml \
+            k8s/backend/migrations/job.yaml \
             | kubectl apply -f -
 
       - name: Wait for migrations
@@ -215,5 +214,6 @@ jobs:
             --timeout=180s
 
       - name: Show migration logs
+        if: always()
         run: |
-          kubectl logs -n backend
+          kubectl logs job/backend-migrations -n backend

@@ -29,5 +29,5 @@ spec:
             - name: POSTGRES_DSN
               valueFrom:
                 secretKeyRef:
-                  name: postgres-secret
+                  name: backend-secrets
                   key: POSTGRES_DSN
