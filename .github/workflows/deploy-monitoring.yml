@@ -79,10 +79,6 @@ jobs:
           kubectl auth can-i create daemonsets -n monitoring
           kubectl auth can-i create customresourcedefinitions
 
-          echo ""
-          echo "=== NAMESPACE ==="
-          kubectl get namespace monitoring
-
       # -------------------------
       # Helm
       # -------------------------
