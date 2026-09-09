@@ -133,6 +133,10 @@ jobs:
             --wait \
             --timeout 10m
 
+      - name: Deploy Grafana Loki datasource
+        run: |
+          kubectl apply -f k8s/monitoring/grafana-datasource.yaml
+
       # -------------------------
       # Grafana Ingress
       # -------------------------
