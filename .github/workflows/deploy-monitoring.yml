@@ -78,6 +78,7 @@ jobs:
           kubectl auth can-i create statefulsets -n monitoring
           kubectl auth can-i create daemonsets -n monitoring
           kubectl auth can-i create customresourcedefinitions
+          kubectl auth can-i create ingresses -n monitoring
 
       # -------------------------
       # Helm
@@ -107,6 +108,15 @@ jobs:
             --timeout 10m
 
       # -------------------------
+      # Grafana Ingress
+      # -------------------------
+
+      - name: Deploy Grafana Ingress
+        run: |
+          kubectl apply \
+            -f k8s/monitoring/grafana-ingress.yaml
+
+      # -------------------------
       # Verification
       # -------------------------
 
@@ -119,6 +129,14 @@ jobs:
           echo ""
           echo "=== SERVICES ==="
           kubectl get svc -n monitoring
+
+          echo ""
+          echo "=== INGRESS ==="
+          kubectl get ingress -n monitoring
+
+          echo ""
+          echo "=== CERTIFICATE ==="
+          kubectl get certificate -n monitoring
 
           echo ""
           echo "=== STATEFULSETS ==="
