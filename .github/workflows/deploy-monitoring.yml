@@ -48,24 +48,38 @@ jobs:
         run: |
           echo "=== CURRENT USER ==="
           kubectl auth whoami
+
           echo ""
           echo "=== NAMESPACE ==="
-          kubectl auth can-i get namespaces
+          kubectl auth can-i get namespaces || true
+
           echo ""
           echo "=== SERVICE ACCOUNT ==="
-          kubectl auth can-i create serviceaccounts -n monitoring
+          kubectl auth can-i create serviceaccounts -n monitoring || true
+
           echo ""
           echo "=== WORKLOADS ==="
-          kubectl auth can-i create deployments -n monitoring
-          kubectl auth can-i create statefulsets -n monitoring
-          kubectl auth can-i create daemonsets -n monitoring
+          kubectl auth can-i create deployments -n monitoring || true
+          kubectl auth can-i create statefulsets -n monitoring || true
+          kubectl auth can-i create daemonsets -n monitoring || true
+          kubectl auth can-i create pods -n monitoring || true
+
           echo ""
           echo "=== RBAC ==="
-          kubectl auth can-i create clusterroles
-          kubectl auth can-i create clusterrolebindings
+          kubectl auth can-i create clusterroles || true
+          kubectl auth can-i create clusterrolebindings || true
+          kubectl auth can-i get clusterroles || true
+          kubectl auth can-i get clusterrolebindings || true
+
           echo ""
           echo "=== CRDs ==="
-          kubectl auth can-i create customresourcedefinitions
+          kubectl auth can-i create customresourcedefinitions || true
+          kubectl auth can-i get customresourcedefinitions || true
+
+          echo ""
+          echo "=== MONITORING CRDs ==="
+          kubectl auth can-i create prometheuses.monitoring.coreos.com -n monitoring || true
+          kubectl auth can-i create servicemonitors.monitoring.coreos.com -n monitoring || true
 #      # -------------------------
 #      # Kubernetes
 #      # -------------------------
