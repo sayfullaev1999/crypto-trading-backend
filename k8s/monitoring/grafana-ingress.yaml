@@ -10,11 +10,11 @@ spec:
 
   tls:
     - hosts:
-        - grafana.crypto.dezz.uz
+        - grafana-crypto.dezz.uz
       secretName: grafana-crypto-dezz-uz-tls
 
   rules:
-    - host: grafana.crypto.dezz.uz
+    - host: grafana-crypto.dezz.uz
       http:
         paths:
           - path: /
