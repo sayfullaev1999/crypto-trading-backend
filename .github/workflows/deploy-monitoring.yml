@@ -18,10 +18,27 @@ jobs:
       contents: read
 
     steps:
+      # -------------------------
+      # Checkout
+      # -------------------------
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configure Kubernetes bootstrap access
+      # -------------------------
+      # Kubernetes
+      # -------------------------
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      # -------------------------
+      # Kubernetes access
+      # -------------------------
+
+      - name: Configure Kubernetes access
         env:
           KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
           KUBE_TOKEN: ${{ secrets.MONITORING_KUBE_TOKEN }}
@@ -35,180 +52,90 @@ jobs:
             --server="$KUBE_SERVER" \
             --certificate-authority="$HOME/.kube/ca.crt"
 
-          kubectl config set-credentials bootstrap \
+          kubectl config set-credentials monitoring \
             --token="$KUBE_TOKEN"
 
-          kubectl config set-context bootstrap \
+          kubectl config set-context monitoring \
             --cluster=k3s \
-            --user=bootstrap
+            --user=monitoring \
+            --namespace=monitoring
 
-          kubectl config use-context bootstrap
+          kubectl config use-context monitoring
 
-      - name: Check monitoring permissions
+      # -------------------------
+      # Verify access
+      # -------------------------
+
+      - name: Verify Kubernetes access
         run: |
           echo "=== CURRENT USER ==="
           kubectl auth whoami
 
           echo ""
+          echo "=== PERMISSIONS ==="
+          kubectl auth can-i get pods -n monitoring
+          kubectl auth can-i create deployments -n monitoring
+          kubectl auth can-i create statefulsets -n monitoring
+          kubectl auth can-i create daemonsets -n monitoring
+          kubectl auth can-i create customresourcedefinitions
+
+          echo ""
           echo "=== NAMESPACE ==="
-          kubectl auth can-i get namespaces || true
+          kubectl get namespace monitoring
+
+      # -------------------------
+      # Helm
+      # -------------------------
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Add Prometheus Helm repository
+        run: |
+          helm repo add prometheus-community \
+            https://prometheus-community.github.io/helm-charts
+
+          helm repo update
+
+      # -------------------------
+      # Prometheus + Grafana
+      # -------------------------
+
+      - name: Deploy kube-prometheus-stack
+        run: |
+          helm upgrade --install monitoring \
+            prometheus-community/kube-prometheus-stack \
+            --namespace monitoring \
+            --values k8s/monitoring/prometheus-values.yaml \
+            --wait \
+            --timeout 10m
+
+      # -------------------------
+      # Verification
+      # -------------------------
+
+      - name: Show monitoring status
+        if: always()
+        run: |
+          echo "=== PODS ==="
+          kubectl get pods -n monitoring -o wide
 
           echo ""
-          echo "=== SERVICE ACCOUNT ==="
-          kubectl auth can-i create serviceaccounts -n monitoring || true
+          echo "=== SERVICES ==="
+          kubectl get svc -n monitoring
 
           echo ""
-          echo "=== WORKLOADS ==="
-          kubectl auth can-i create deployments -n monitoring || true
-          kubectl auth can-i create statefulsets -n monitoring || true
-          kubectl auth can-i create daemonsets -n monitoring || true
-          kubectl auth can-i create pods -n monitoring || true
+          echo "=== STATEFULSETS ==="
+          kubectl get statefulsets -n monitoring
 
           echo ""
-          echo "=== RBAC ==="
-          kubectl auth can-i create clusterroles || true
-          kubectl auth can-i create clusterrolebindings || true
-          kubectl auth can-i get clusterroles || true
-          kubectl auth can-i get clusterrolebindings || true
+          echo "=== DEPLOYMENTS ==="
+          kubectl get deployments -n monitoring
 
           echo ""
-          echo "=== CRDs ==="
-          kubectl auth can-i create customresourcedefinitions || true
-          kubectl auth can-i get customresourcedefinitions || true
+          echo "=== DAEMONSETS ==="
+          kubectl get daemonsets -n monitoring
 
           echo ""
-          echo "=== MONITORING CRDs ==="
-          kubectl auth can-i create prometheuses.monitoring.coreos.com -n monitoring || true
-          kubectl auth can-i create servicemonitors.monitoring.coreos.com -n monitoring || true
-#      # -------------------------
-#      # Kubernetes
-#      # -------------------------
-#
-#      - name: Set up kubectl
-#        uses: azure/setup-kubectl@v4
-#        with:
-#          version: latest
-#
-#      # -------------------------
-#      # Bootstrap access
-#      # -------------------------
-#
-#      - name: Configure Kubernetes bootstrap access
-#        env:
-#          KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
-#          KUBE_TOKEN: ${{ secrets.MONITORING_KUBE_TOKEN }}
-#          KUBE_CA_CERT: ${{ secrets.KUBE_CA_CERT }}
-#        run: |
-#          mkdir -p ~/.kube
-#
-#          printf '%s\n' "$KUBE_CA_CERT" > ~/.kube/ca.crt
-#
-#          kubectl config set-cluster k3s \
-#            --server="$KUBE_SERVER" \
-#            --certificate-authority="$HOME/.kube/ca.crt"
-#
-#          kubectl config set-credentials bootstrap \
-#            --token="$KUBE_TOKEN"
-#
-#          kubectl config set-context bootstrap \
-#            --cluster=k3s \
-#            --user=bootstrap
-#
-#          kubectl config use-context bootstrap
-#
-#      # -------------------------
-#      # Namespace
-#      # -------------------------
-#
-#      - name: Deploy monitoring namespace
-#        run: |
-#          kubectl apply \
-#            -f k8s/monitoring/namespace.yaml
-#
-#      # -------------------------
-#      # RBAC
-#      # -------------------------
-#
-#      - name: Deploy monitoring RBAC
-#        run: |
-#          kubectl apply \
-#            -f k8s/monitoring/rbac.yaml
-#
-#      # -------------------------
-#      # Switch to monitoring account
-#      # -------------------------
-#
-#      - name: Configure monitoring Kubernetes access
-#        env:
-#          KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
-#          MONITORING_KUBE_TOKEN: ${{ secrets.MONITORING_KUBE_TOKEN }}
-#          KUBE_CA_CERT: ${{ secrets.KUBE_CA_CERT }}
-#        run: |
-#          kubectl config set-credentials monitoring \
-#            --token="$MONITORING_KUBE_TOKEN"
-#
-#          kubectl config set-context monitoring \
-#            --cluster=k3s \
-#            --user=monitoring \
-#            --namespace=monitoring
-#
-#          kubectl config use-context monitoring
-#
-#      # -------------------------
-#      # Verify monitoring access
-#      # -------------------------
-#
-#      - name: Verify Kubernetes access
-#        run: |
-#          kubectl auth can-i get pods -n monitoring
-#          kubectl auth can-i create deployments -n monitoring
-#          kubectl get namespace monitoring
-#
-#      # -------------------------
-#      # Helm
-#      # -------------------------
-#
-#      - name: Set up Helm
-#        uses: azure/setup-helm@v4
-#
-#      - name: Add Prometheus Helm repository
-#        run: |
-#          helm repo add prometheus-community \
-#            https://prometheus-community.github.io/helm-charts
-#
-#          helm repo update
-#
-#      # -------------------------
-#      # Prometheus + Grafana
-#      # -------------------------
-#
-#      - name: Deploy kube-prometheus-stack
-#        run: |
-#          helm upgrade --install monitoring \
-#            prometheus-community/kube-prometheus-stack \
-#            --namespace monitoring \
-#            --values k8s/monitoring/prometheus-values.yaml \
-#            --wait \
-#            --timeout 10m
-#
-#      # -------------------------
-#      # Verification
-#      # -------------------------
-#
-#      - name: Show monitoring status
-#        if: always()
-#        run: |
-#          echo "=== PODS ==="
-#          kubectl get pods -n monitoring -o wide
-#
-#          echo "=== SERVICES ==="
-#          kubectl get svc -n monitoring
-#
-#          echo "=== STATEFULSETS ==="
-#          kubectl get statefulsets -n monitoring
-#
-#          echo "=== DEPLOYMENTS ==="
-#          kubectl get deployments -n monitoring
-#
-#          echo "=== CRDS ==="
-#          kubectl get crd | grep monitoring.coreos.com || true
+          echo "=== MONITORING CRDS ==="
+          kubectl get crd | grep monitoring.coreos.com || true
