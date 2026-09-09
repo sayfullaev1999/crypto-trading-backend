@@ -135,10 +135,6 @@ jobs:
           kubectl get ingress -n monitoring
 
           echo ""
-          echo "=== CERTIFICATE ==="
-          kubectl get certificate -n monitoring
-
-          echo ""
           echo "=== STATEFULSETS ==="
           kubectl get statefulsets -n monitoring
 
