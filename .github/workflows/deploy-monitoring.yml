@@ -1,0 +1,115 @@
+name: Deploy Monitoring
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "k8s/monitoring/**"
+      - ".github/workflows/deploy-monitoring.yml"
+
+  workflow_dispatch:
+
+jobs:
+  deploy-monitoring:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -------------------------
+      # Kubernetes
+      # -------------------------
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      - name: Configure Kubernetes
+        env:
+          KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
+          KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+          KUBE_CA_CERT: ${{ secrets.KUBE_CA_CERT }}
+        run: |
+          mkdir -p ~/.kube
+
+          printf '%s\n' "$KUBE_CA_CERT" > ~/.kube/ca.crt
+
+          kubectl config set-cluster k3s \
+            --server="$KUBE_SERVER" \
+            --certificate-authority="$HOME/.kube/ca.crt"
+
+          kubectl config set-credentials github-actions \
+            --token="$KUBE_TOKEN"
+
+          kubectl config set-context k3s \
+            --cluster=k3s \
+            --user=github-actions \
+            --namespace=monitoring
+
+          kubectl config use-context k3s
+
+      - name: Verify Kubernetes access
+        run: |
+          kubectl get nodes
+          kubectl get namespace monitoring
+
+      # -------------------------
+      # Helm
+      # -------------------------
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Add Prometheus Helm repository
+        run: |
+          helm repo add prometheus-community \
+            https://prometheus-community.github.io/helm-charts
+
+          helm repo update
+
+      # -------------------------
+      # Namespace
+      # -------------------------
+
+      - name: Deploy monitoring namespace
+        run: |
+          kubectl apply \
+            -f k8s/monitoring/namespace.yaml
+
+      # -------------------------
+      # Prometheus + Grafana
+      # -------------------------
+
+      - name: Deploy kube-prometheus-stack
+        run: |
+          helm upgrade --install monitoring \
+            prometheus-community/kube-prometheus-stack \
+            --namespace monitoring \
+            --values k8s/monitoring/prometheus-values.yaml \
+            --wait \
+            --timeout 10m
+
+      # -------------------------
+      # Verification
+      # -------------------------
+
+      - name: Show monitoring status
+        if: always()
+        run: |
+          echo "=== PODS ==="
+          kubectl get pods -n monitoring -o wide
+
+          echo "=== SERVICES ==="
+          kubectl get svc -n monitoring
+
+          echo "=== STATEFULSETS ==="
+          kubectl get statefulsets -n monitoring
+
+          echo "=== DEPLOYMENTS ==="
+          kubectl get deployments -n monitoring

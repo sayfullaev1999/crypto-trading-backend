@@ -4,6 +4,14 @@ on:
   push:
     branches:
       - master
+    paths:
+      - "src/**"
+      - "docker/**"
+      - "k8s/backend/**"
+      - "k8s/postgres/**"
+      - "k8s/redis/**"
+      - "k8s/cert-manager/**"
+      - ".github/workflows/deploy.yml"
   pull_request:
     branches:
       - master
