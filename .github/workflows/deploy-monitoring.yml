@@ -97,8 +97,13 @@ jobs:
           helm repo add grafana-community https://grafana-community.github.io/helm-charts
           helm repo update
 
+      - name: Add Grafana Helm repository
+        run: |
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
+
       # -------------------------
-      # Prometheus + Grafana + Loki
+      # Prometheus + Grafana + Loki + Alloy
       # -------------------------
 
       - name: Deploy kube-prometheus-stack
@@ -116,6 +121,15 @@ jobs:
             grafana-community/loki \
             --namespace monitoring \
             --values k8s/monitoring/loki-values.yaml \
+            --wait \
+            --timeout 10m
+
+      - name: Deploy Alloy
+        run: |
+          helm upgrade --install alloy \
+            grafana/alloy \
+            --namespace monitoring \
+            --values k8s/monitoring/alloy-values.yaml \
             --wait \
             --timeout 10m
 
