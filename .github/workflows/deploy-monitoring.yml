@@ -30,7 +30,11 @@ jobs:
         with:
           version: latest
 
-      - name: Configure Kubernetes
+      # -------------------------
+      # Bootstrap access
+      # -------------------------
+
+      - name: Configure Kubernetes bootstrap access
         env:
           KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
           KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
@@ -44,19 +48,61 @@ jobs:
             --server="$KUBE_SERVER" \
             --certificate-authority="$HOME/.kube/ca.crt"
 
-          kubectl config set-credentials github-actions \
+          kubectl config set-credentials bootstrap \
             --token="$KUBE_TOKEN"
 
-          kubectl config set-context k3s \
+          kubectl config set-context bootstrap \
             --cluster=k3s \
-            --user=github-actions \
+            --user=bootstrap
+
+          kubectl config use-context bootstrap
+
+      # -------------------------
+      # Namespace
+      # -------------------------
+
+      - name: Deploy monitoring namespace
+        run: |
+          kubectl apply \
+            -f k8s/monitoring/namespace.yaml
+
+      # -------------------------
+      # RBAC
+      # -------------------------
+
+      - name: Deploy monitoring RBAC
+        run: |
+          kubectl apply \
+            -f k8s/monitoring/rbac.yaml
+
+      # -------------------------
+      # Switch to monitoring account
+      # -------------------------
+
+      - name: Configure monitoring Kubernetes access
+        env:
+          KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
+          MONITORING_KUBE_TOKEN: ${{ secrets.MONITORING_KUBE_TOKEN }}
+          KUBE_CA_CERT: ${{ secrets.KUBE_CA_CERT }}
+        run: |
+          kubectl config set-credentials monitoring \
+            --token="$MONITORING_KUBE_TOKEN"
+
+          kubectl config set-context monitoring \
+            --cluster=k3s \
+            --user=monitoring \
             --namespace=monitoring
 
-          kubectl config use-context k3s
+          kubectl config use-context monitoring
+
+      # -------------------------
+      # Verify monitoring access
+      # -------------------------
 
       - name: Verify Kubernetes access
         run: |
-          kubectl get nodes
+          kubectl auth can-i get pods -n monitoring
+          kubectl auth can-i create deployments -n monitoring
           kubectl get namespace monitoring
 
       # -------------------------
@@ -72,15 +118,6 @@ jobs:
             https://prometheus-community.github.io/helm-charts
 
           helm repo update
-
-      # -------------------------
-      # Namespace
-      # -------------------------
-
-      - name: Deploy monitoring namespace
-        run: |
-          kubectl apply \
-            -f k8s/monitoring/namespace.yaml
 
       # -------------------------
       # Prometheus + Grafana
@@ -113,3 +150,6 @@ jobs:
 
           echo "=== DEPLOYMENTS ==="
           kubectl get deployments -n monitoring
+
+          echo "=== CRDS ==="
+          kubectl get crd | grep monitoring.coreos.com || true
