@@ -59,6 +59,43 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 20
 
+        - name: pgbouncer-exporter
+          image: quay.io/prometheuscommunity/pgbouncer-exporter:v0.12.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 9127
+              protocol: TCP
+          args:
+            - --pgBouncer.connectionString=postgres://pgbouncer_admin:$(PGBOUNCER_ADMIN_PASSWORD)@localhost:5432/pgbouncer
+          env:
+            - name: PGBOUNCER_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: PGBOUNCER_ADMIN_PASSWORD
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
       volumes:
         - name: pgbouncer-config
           configMap:

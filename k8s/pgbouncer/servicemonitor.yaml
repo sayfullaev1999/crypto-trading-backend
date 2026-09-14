@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: pgbouncer
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - backend
+
+  selector:
+    matchLabels:
+      app: pgbouncer
+
+  endpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics

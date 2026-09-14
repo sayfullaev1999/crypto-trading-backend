@@ -14,4 +14,10 @@ spec:
       port: 5432
       targetPort: postgres
       protocol: TCP
+
+    - name: metrics
+      port: 9127
+      targetPort: metrics
+      protocol: TCP
+
   type: ClusterIP
