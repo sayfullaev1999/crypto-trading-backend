@@ -5,6 +5,8 @@ kind: Service
 metadata:
   name: pgbouncer
   namespace: backend
+  labels:
+    app: pgbouncer
 
 spec:
   selector:

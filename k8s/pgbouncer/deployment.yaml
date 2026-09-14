@@ -67,7 +67,7 @@ spec:
               containerPort: 9127
               protocol: TCP
           args:
-            - --pgBouncer.connectionString=postgres://pgbouncer_admin:$(PGBOUNCER_ADMIN_PASSWORD)@localhost:5432/pgbouncer
+            - --pgBouncer.connectionString=postgres://pgbouncer_admin:$(PGBOUNCER_ADMIN_PASSWORD)@localhost:5432/pgbouncer?sslmode=disable
           env:
             - name: PGBOUNCER_ADMIN_PASSWORD
               valueFrom:
