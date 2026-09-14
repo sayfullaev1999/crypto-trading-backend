@@ -154,9 +154,7 @@ jobs:
           WALLET_ENCRYPTION_PASSWORD: ${{ secrets.WALLET_ENCRYPTION_PASSWORD }}
           POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
         run: |
-          USERLIST_CONTENT=$(printf '"crypto_trading_user" "%s"\n"pgbouncer_admin" "%s"\n' \ 
-          "$POSTGRES_PASSWORD" \ 
-          "$PGBOUNCER_ADMIN_PASSWORD")
+          USERLIST_CONTENT=$(printf '"crypto_trading_user" "%s"\n"pgbouncer_admin" "%s"\n' "$POSTGRES_PASSWORD" "$PGBOUNCER_ADMIN_PASSWORD")
 
           kubectl create secret generic backend-secrets \
             -n backend \
