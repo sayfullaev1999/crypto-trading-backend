@@ -10,6 +10,7 @@ on:
       - "k8s/backend/**"
       - "k8s/postgres/**"
       - "k8s/redis/**"
+      - "k8s/pgbouncer/**"
       - "k8s/cert-manager/**"
       - ".github/workflows/deploy.yml"
   pull_request:
@@ -147,19 +148,25 @@ jobs:
       - name: Create secrets
         env:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          PGBOUNCER_ADMIN_PASSWORD: ${{ secrets.PGBOUNCER_ADMIN_PASSWORD }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           WALLET_ENCRYPTION_PASSWORD: ${{ secrets.WALLET_ENCRYPTION_PASSWORD }}
           POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
         run: |
+          USERLIST_CONTENT=$(printf '"crypto_trading_user" "%s"\n"pgbouncer_admin" "%s"\n' \ 
+          "$POSTGRES_PASSWORD" \ 
+          "$PGBOUNCER_ADMIN_PASSWORD")
+
           kubectl create secret generic backend-secrets \
             -n backend \
             --from-literal=POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-            --from-literal=POSTGRES_DSN="postgresql+asyncpg://crypto_trading_user:${POSTGRES_PASSWORD}@postgres:5432/crypto_trading" \
+            --from-literal=POSTGRES_DSN="postgresql+asyncpg://crypto_trading_user:${POSTGRES_PASSWORD}@pgbouncer:5432/crypto_trading" \
             --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD" \
             --from-literal=JWT_SECRET_KEY="$JWT_SECRET_KEY" \
             --from-literal=WALLET_ENCRYPTION_PASSWORD="$WALLET_ENCRYPTION_PASSWORD" \
             --from-literal=POLYGON_API_KEY="$POLYGON_API_KEY" \
+            --from-literal=userlist.txt="$USERLIST_CONTENT" \
             --dry-run=client \
             -o yaml | kubectl apply -f -
 
@@ -179,6 +186,20 @@ jobs:
             statefulset/postgres \
             -n backend \
             --timeout=180s
+
+      # PgBouncer
+      - name: Deploy PgBouncer config
+        run: |
+          kubectl apply -f k8s/pgbouncer/configmap.yaml
+
+      - name: Deploy PgBouncer
+        run: |
+          kubectl apply -f k8s/pgbouncer/deployment.yaml
+          kubectl apply -f k8s/pgbouncer/service.yaml
+
+      - name: Wait for PgBouncer
+        run: |
+          kubectl rollout status deployment/pgbouncer -n backend --timeout=180s
 
       # Redis
       - name: Deploy Redis config
